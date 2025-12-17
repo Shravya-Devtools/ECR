@@ -3,7 +3,7 @@ provider "aws" {
   profile = "accountB_profile"  # AWS profile for Account B
 
   assume_role {
-    role_arn     = "arn:aws:iam::[AccountB-ID]:role/TerraformExecutionRole"  # Role to assume in Account B
+    role_arn     = "arn:aws:iam:085230022322:role/TerraformExecutionRole"  # Role to assume in Account B
     session_name = "TerraformSession"
   }
 }
