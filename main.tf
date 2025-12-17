@@ -1,6 +1,11 @@
 provider "aws" {
-  region  = "us-east-1"  # Account B region
+  region  = "us-east-1"  # AWS region for Account B
   profile = "accountB_profile"  # AWS profile for Account B
+
+  assume_role {
+    role_arn     = "arn:aws:iam::[AccountB-ID]:role/TerraformExecutionRole"  # Role to assume in Account B
+    session_name = "TerraformSession"
+  }
 }
 
 # ECS Task Role in Account B (allows ECS to assume role to pull images from Account A)
