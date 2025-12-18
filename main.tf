@@ -1,9 +1,7 @@
 provider "aws" {
-  region  = "us-east-1"  # AWS region for Account B
-  profile = "accountB_profile"  # AWS profile for Account B
-
+  region  = "us-east-1"
   assume_role {
-    role_arn     = "arn:aws:iam::085230022322:role/TerraformRole"  # Role to assume in Account B
+    role_arn     = "arn:aws:iam::085230022322:role/TerraformRole"
     session_name = "TerraformSession"
   }
 }
