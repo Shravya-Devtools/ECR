@@ -4,7 +4,7 @@ provider "aws" {
   
   # Assume Role to access resources in Account B from Account A
   assume_role {
-    role_arn     = "arn:aws:iam::ACCOUNT_B_ID:role/TerraformRoleForAccountB"  # Replace with Account B's Role ARN
+    role_arn     = "arn:aws:iam::085230022322:role/TerraformRoleForAccountB"  # Replace with Account B's Role ARN
     session_name = "TerraformSession"
   }
 }
@@ -89,7 +89,7 @@ resource "aws_iam_policy" "ecr_access_policy" {
           "ecr:BatchGetImage",
           "ecr:DescribeRepositories"
         ],
-        "Resource" = "arn:aws:ecr:us-east-1:741846357014:repository/my-ecr-repository"  # Replace with your ECR repository ARN
+        "Resource" = "741846357014.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repository"  # Replace with your ECR repository ARN
       }
     ]
   })
