@@ -1,49 +1,15 @@
-# Provider Configuration
+# Provider block to assume a cross-account role in Account B from Account A
 provider "aws" {
   region  = "us-east-1"
+  
+  # Assume Role to access resources in Account B from Account A
   assume_role {
-    role_arn     = "arn:aws:iam::085230022322:role/TerraformRole"
+    role_arn     = "arn:aws:iam::ACCOUNT_B_ID:role/TerraformRoleForAccountB"  # Replace with Account B's Role ARN
     session_name = "TerraformSession"
   }
 }
 
-# S3 Bucket for Terraform State Storage
-resource "aws_s3_bucket" "terraform_state_bucket" {
-  bucket = "my-terraform-state-bucket"
-  acl    = "private"
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# DynamoDB Table for State Locking
-resource "aws_dynamodb_table" "terraform_lock_table" {
-  name           = "terraform-lock-table"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "LockID"
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
-
-# Backend Configuration for Remote State
-terraform {
-  backend "s3" {
-    bucket         = aws_s3_bucket.terraform_state_bucket.bucket
-    key            = "terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = aws_dynamodb_table.terraform_lock_table.name
-  }
-}
-
-# ECS Task Role in Account B (allows ECS to assume role to pull images from Account A)
+# Create ECS Task Role in Account B (allows ECS to assume role to pull images from Account A's ECR)
 resource "aws_iam_role" "ecs_task_role" {
   name               = "ecsTaskRole"
   assume_role_policy = jsonencode({
@@ -60,7 +26,7 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-# ECS Execution Role in Account B (grants ECS permissions to interact with AWS services)
+# Create ECS Execution Role in Account B (grants ECS permissions to interact with AWS services like CloudWatch)
 resource "aws_iam_role" "ecs_execution_role" {
   name               = "ecsExecutionRole"
   assume_role_policy = jsonencode({
@@ -77,14 +43,14 @@ resource "aws_iam_role" "ecs_execution_role" {
   })
 }
 
-# ECS Task Definition (using image from Account A's ECR)
+# Create ECS Task Definition using image from Account A's ECR repository
 resource "aws_ecs_task_definition" "ecs_task" {
   family                   = "my-ecs-task-definition"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
   container_definitions    = jsonencode([{
     name      = "my-container"
-    image     = "741846357014.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repository:v1.0.0"  # ECR image in Account A
+    image     = "741846357014.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repository:v1.0.0"  # Replace with your ECR repository details
     memory    = 512
     cpu       = 256
     essential = true
@@ -92,7 +58,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
   network_mode = "awsvpc"
 }
 
-# ECS Service to run ECS Task
+# Create ECS Service in Account B to run the ECS Task
 resource "aws_ecs_service" "ecs_service" {
   name            = "my-ecs-service"
   cluster         = "NewCluster"  # ECS cluster ID in Account B
@@ -100,7 +66,7 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
 }
 
-# Lambda function using image from ECR in Account A
+# Create Lambda function in Account B using an image from ECR in Account A
 resource "aws_lambda_function" "my_lambda_function" {
   function_name = "my-lambda-function"
   role          = aws_iam_role.ecs_execution_role.arn
@@ -108,7 +74,7 @@ resource "aws_lambda_function" "my_lambda_function" {
   package_type  = "Image"
 }
 
-# IAM Policy allowing ECS and Lambda to pull images from ECR in Account A
+# IAM Policy allowing ECS and Lambda to pull images from Account A's ECR
 resource "aws_iam_policy" "ecr_access_policy" {
   name        = "ECRAccessPolicy"
   description = "Allow ECS and Lambda to pull images from Account A's ECR"
@@ -123,13 +89,13 @@ resource "aws_iam_policy" "ecr_access_policy" {
           "ecr:BatchGetImage",
           "ecr:DescribeRepositories"
         ],
-        "Resource" = "arn:aws:ecr:us-east-1:741846357014:repository/my-ecr-repository"
+        "Resource" = "arn:aws:ecr:us-east-1:741846357014:repository/my-ecr-repository"  # Replace with your ECR repository ARN
       }
     ]
   })
 }
 
-# Attach the policy to ECS and Lambda execution roles in Account B
+# Attach the ECR access policy to ECS and Lambda execution roles in Account B
 resource "aws_iam_role_policy_attachment" "ecs_ecr_access" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.ecr_access_policy.arn
